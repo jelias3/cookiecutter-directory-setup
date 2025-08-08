@@ -1,1 +1,1 @@
-# Any Python script in the scripts folder will be able to import from this module and beyond.
+# This file makes it so that any Python script in this scripts folder will be imported and accessible for this module and beyond.
