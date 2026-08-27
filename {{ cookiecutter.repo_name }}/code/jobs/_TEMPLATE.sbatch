@@ -66,15 +66,29 @@ mkdir -p "logs/${JOBNAME}"
 #     condition = CONDITIONS[ T % 3 ]         -> 3 values
 #   Task 1 is therefore (SAMPLES[0], CONDITIONS[0]) -- that is the one to validate.
 #
-# Keep --array=1-N above equal to the product. A mismatch either silently skips work or
+# Keep --array=1-N above equal to the product, and N_CONDITIONS equal to the array. A mismatch either silently skips work or
 # indexes past the end of the array, which under `set -u` is a hard error -- that is the
 # GOOD case, and it is why `set -u` is not optional here.
 SAMPLES=(TODO_a TODO_b TODO_c TODO_d)
 CONDITIONS=(TODO_x TODO_y TODO_z)
+N_CONDITIONS=3      # keep equal to the number of CONDITIONS entries above
+
+# Guard against N_CONDITIONS drifting out of sync with the array above -- a silent drift
+# here mis-decodes every task's parameters, which is the worst kind of array bug.
+#
+# NOTE: bash's array-length operator (dollar, brace, hash, NAME) would be the idiomatic
+# way to count, and it is deliberately NOT used. This file is a cookiecutter template, and
+# Jinja2 reads that operator's brace-hash pair as the start of a comment tag, which breaks
+# project generation with "Missing end of comment tag". Do not "simplify" this back.
+_n_actual=$(printf '%s\n' "${CONDITIONS[@]}" | wc -l)
+if [ "$N_CONDITIONS" -ne "$_n_actual" ]; then
+    echo "N_CONDITIONS ($N_CONDITIONS) != number of CONDITIONS entries ($_n_actual)" >&2
+    exit 1
+fi
 
 T=$((SLURM_ARRAY_TASK_ID - 1))
-SAMPLE=${SAMPLES[$(( T / ${#CONDITIONS[@]} ))]}
-CONDITION=${CONDITIONS[$(( T % ${#CONDITIONS[@]} ))]}
+SAMPLE=${SAMPLES[$(( T / N_CONDITIONS ))]}
+CONDITION=${CONDITIONS[$(( T % N_CONDITIONS ))]}
 
 # --- Paths -------------------------------------------------------------------------
 # Repo-root-relative, because CWD is the repo root. Reference data comes from the config

@@ -17,5 +17,5 @@ from that front matter — **nothing here needs editing when an analysis is adde
 good front matter instead; `description` is the headline and carries the actual numeric
 conclusion. See [`README.md`](README.md) for the conventions.
 
-::: {#analyses}
-:::
+{% raw %}::: {#analyses}
+:::{% endraw %}

@@ -58,9 +58,18 @@ slurm-delete-logfiles-older-than: 30      # days; prunes leftover failure logs
 slurm-jobname-prefix: "{{ cookiecutter.repo_name }}"
 
 # --- cluster defaults (was cluster-config.yaml's __default__) ----------------------
+#
+# THE NESTED QUOTES ON THE TWO STRING VALUES BELOW ARE DELIBERATE -- do not "tidy" them.
+# Snakemake treats a non-integer resource value as a PYTHON EXPRESSION evaluated per job.
+# A bare `caslake` only works by accident: eval raises NameError and snakemake falls back
+# to the literal string. That fallback silently does the wrong thing for any value that
+# happens to be a valid name in scope -- a partition or account named `input`, `attempt`,
+# `threads` or `wildcards` would evaluate to that object instead of your string. Quoting
+# inside the YAML value makes eval see a real string literal, which is correct for every
+# possible value.
 default-resources:
-  slurm_account: "{{ cookiecutter.slurm_account }}"
-  slurm_partition: "{{ cookiecutter.slurm_partition }}"
+  slurm_account: "'{{ cookiecutter.slurm_account }}'"
+  slurm_partition: "'{{ cookiecutter.slurm_partition }}'"
   mem_mb: 16000
   cpus_per_task: 1
   runtime: 240             # MINUTES, not "HH:MM:SS". 240 = 4 h. Misreading this unit is
@@ -77,15 +86,15 @@ set-resources:
   # (partition: gpu / gres: gpu:a100:1 / cpus-per-task: 4 / mem: 32000 / time: 18:00:00):
   #
   # dorado_basecall:
-  #   slurm_partition: gpu
-  #   gres: "gpu:a100:1"
+  #   slurm_partition: "'gpu'"
+  #   gres: "'gpu:a100:1'"
   #   cpus_per_task: 4
   #   mem_mb: 32000
   #   runtime: 1080          # 18 h in minutes
   #
   # A memory-hungry rule:
   # star_index:
-  #   slurm_partition: bigmem
+  #   slurm_partition: "'bigmem'"
   #   mem_mb: 128000
   #   cpus_per_task: 8
   #   runtime: 720

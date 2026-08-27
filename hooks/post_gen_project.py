@@ -164,8 +164,10 @@ else:
 
 # ------------------------------------- 5. splice submodule blocks (in Python)
 # Done in Python rather than Jinja: under `--no-input` a dict passed on the CLI arrives
-# as a *string*, and a Jinja `{% for %}` over a string iterates its CHARACTERS -- which
-# silently emitted one garbage module block per character.
+# as a *string*, and a Jinja for-loop over a string iterates its CHARACTERS -- which
+# silently emitted one garbage module block per character. (Note this file is itself
+# rendered through Jinja by cookiecutter, so a literal Jinja tag in a comment here is a
+# syntax error, not a comment.)
 snakefile_path = os.path.join("code", "Snakefile")
 with open(snakefile_path) as fh:
     snakefile = fh.read()
