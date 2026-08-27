@@ -50,8 +50,6 @@ dependencies:
   - pymc>=5
   - pip
   - pytensor
-  # tensorflow pulls a large CUDA dependency tree and dominates this solve. If
-  # `conda env create` fails or takes forever, drop it here and give it its own env.
   - tensorflow
 
   # Bioinformatics
@@ -69,7 +67,11 @@ dependencies:
   - bioconda::htseq
   - bioconda::blast=2.16.0
   - bioconda::hgvs
-  - bioconda::logomaker
+  # logomaker is a CONDA-FORGE package, not bioconda. The inherited 'bioconda::'
+  # prefix forced the single stale bioconda build and made the whole env
+  # unsolvable ('not installable because it conflicts with any installable
+  # versions'). Unprefixed, conda-forge's current builds are eligible.
+  - logomaker
   - bioconda::gseapy  # GO/pathway enrichment (ORA + GSEA)
 
   # Utilities
@@ -78,16 +80,17 @@ dependencies:
   - tqdm
   - future
   - pycryptodome
-  - ca-certificates
-  - certifi
-  - openssl
-  # These four are transitive; pinning them is a common cause of an unsatisfiable
-  # solve. Remove them first if this env stops resolving.
-  - pyopenssl>=24  # avoid drift vs cryptography
+  # ca-certificates / certifi / openssl / pyopenssl>=24 were removed: all four are
+  # transitive dependencies, and pinning them is a classic cause of an unsatisfiable
+  # solve. Let the solver choose them.
   - natsort
   - anndata
 
   - pip:
-    - my-utils==0.1.0
+    # Trimmed deliberately -- see the PR that introduced this:
+    #   - my-utils==0.1.0     REMOVED: that version was never published to PyPI (only
+    #                         0.0.1 exists), and the name is generic enough that whatever
+    #                         owns it is almost certainly not what was intended.
+    #   - pikachu-chem==1.1.5 REMOVED: cheminformatics; add it back per-project
+    #                         if a project actually needs it.
     - alphagenome==0.5.1
-    - pikachu-chem==1.1.5
