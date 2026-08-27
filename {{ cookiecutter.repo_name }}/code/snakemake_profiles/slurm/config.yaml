@@ -1,12 +1,94 @@
-# default snakemake parameters for this profile
-restart-times: 1
-jobscript: "slurm-jobscript.sh"
-cluster: "slurm-submit.py"
-cluster-status: "slurm-status.py"
+# Snakemake >=8 SLURM profile for UChicago RCC midway3.
+# Requires: snakemake-executor-plugin-slurm (in the driver env, envs/{{ cookiecutter.repo_name }}.yaml)
+#
+# Usage, from the `code/` directory:
+#     snakemake --profile snakemake_profiles/slurm -n     # dry run
+#     snakemake --profile snakemake_profiles/slurm        # submit
+#
+# This replaces the Snakemake 7 --cluster/--cluster-status mechanism. The vendored
+# slurm-submit.py / slurm-status.py / slurm_utils.py / slurm-jobscript.sh and
+# cluster-config.yaml are gone; per-rule overrides now live in `set-resources` below.
+#
+# This profile owns the executor, account, partition, retries, latency-wait and the log
+# destination. Do NOT re-pass those on the command line.
+
+executor: slurm
+
+# --- concurrency -------------------------------------------------------------------
+jobs: 100                  # max simultaneously queued/running SLURM jobs
+local-cores: 1             # cores for localrules, which run on the submitting node
 max-jobs-per-second: 1
 max-status-checks-per-second: 10
-local-cores: 1
-latency-wait: 60
-use-conda: True
+
+# --- robustness --------------------------------------------------------------------
+retries: 3                 # Snakemake 8's name for 7's `restart-times`.
+                           # NOTE: a rule that fails by TIMING OUT burns one whole
+                           # allocation per retry. Combine with a resource escalator
+                           # (see docs/running_and_slurm.md) so retries ask for more,
+                           # rather than failing the same way 3 more times.
+latency-wait: 60           # seconds to wait for shared-FS output to appear
 rerun-incomplete: True
-jobs: 150
+keep-going: True           # don't abandon independent branches on one failure
+
+# --- software deployment -----------------------------------------------------------
+software-deployment-method:
+  - conda
+# Pinned to the classic solver deliberately: mamba >=2.0 changed its CLI in a way that
+# broke Snakemake's per-rule env creation. Try DELETING this line and confirming
+# `--use-conda` env creation still works; if it does, leave it out.
+conda-frontend: conda
+
+# --- SLURM job logs ---------------------------------------------------------------
+# Relative paths here resolve against the directory snakemake was invoked from (`code/`),
+# so this lands at repo-root logs/slurm/ -- the single log policy in
+# docs/running_and_slurm.md §Logs. The plugin creates the directory itself.
+#
+# Layout it produces:  logs/slurm/<rule>/<wildcards>/<jobid>.log
+#                      logs/slurm/<rule>/<arrayjobid>_<taskid>.log   (array jobs)
+# stdout and stderr are MERGED into that one file per job -- there is no split, and no
+# way to discard stdout. That is a feature here: the plugin DELETES the log of a job that
+# succeeds and keeps only failures, which is what the old `output: /dev/null` was really
+# reaching for. Add --slurm-keep-successful-logs to keep them all.
+slurm-logdir: ../logs/slurm
+slurm-delete-logfiles-older-than: 30      # days; prunes leftover failure logs
+
+# Every job in one snakemake run shares a single SLURM job name: the run's UUID. That is
+# what makes `scancel --name <uuid>` able to kill exactly one run. The prefix below makes
+# it recognizable in `squeue` -- per-rule job names are not available with this plugin.
+slurm-jobname-prefix: "{{ cookiecutter.repo_name }}"
+
+# --- cluster defaults (was cluster-config.yaml's __default__) ----------------------
+default-resources:
+  slurm_account: "{{ cookiecutter.slurm_account }}"
+  slurm_partition: "{{ cookiecutter.slurm_partition }}"
+  mem_mb: 16000
+  cpus_per_task: 1
+  runtime: 240             # MINUTES, not "HH:MM:SS". 240 = 4 h. Misreading this unit is
+                           # the single most likely migration mistake from the old profile.
+
+# --- per-rule overrides (was cluster-config.yaml's named sections) -----------------
+# Rule names must match the Snakefile exactly. `gres`, `gpu`, `gpu_model` and
+# `cpus_per_gpu` are first-class resources -- do NOT smuggle them through slurm_extra.
+# slurm_extra is only for flags the plugin does not manage; it REJECTS --job-name,
+# --output, --error, --account, --partition, --mem, --cpus-per-task, --time, --nodes,
+# --qos and --constraint, because it sets those itself.
+set-resources:
+  # GPU example, ported from a legacy cluster-config `dorado_basecall` block
+  # (partition: gpu / gres: gpu:a100:1 / cpus-per-task: 4 / mem: 32000 / time: 18:00:00):
+  #
+  # dorado_basecall:
+  #   slurm_partition: gpu
+  #   gres: "gpu:a100:1"
+  #   cpus_per_task: 4
+  #   mem_mb: 32000
+  #   runtime: 1080          # 18 h in minutes
+  #
+  # A memory-hungry rule:
+  # star_index:
+  #   slurm_partition: bigmem
+  #   mem_mb: 128000
+  #   cpus_per_task: 8
+  #   runtime: 720
+
+set-threads:
+  # star_align: 8
