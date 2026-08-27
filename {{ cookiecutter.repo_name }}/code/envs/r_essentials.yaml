@@ -5,7 +5,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - r-base
+  - r-base>=4.3        # floor matters: the 2021-era dumps this replaced pinned R 3.6
   - r-essentials        # tidyverse, knitr, rmarkdown, and friends
   - r-irkernel          # R kernel for Jupyter / Quarto
   - r-data.table
