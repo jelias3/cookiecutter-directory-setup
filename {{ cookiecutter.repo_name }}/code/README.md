@@ -1,3 +1,16 @@
+> **This file is inherited upstream boilerplate and is NOT the documentation for this
+> project.** It is kept because it documents the generic snakemake-workflows layout, but
+> its instructions are generic and some of them are wrong here.
+>
+> Start at [`/AGENTS.md`](../AGENTS.md). For launching runs, envs, SLURM and the log
+> policy, see [`/docs/running_and_slurm.md`](../docs/running_and_slurm.md).
+>
+> TODO: as you deviate from the instructions below -- a different env, a different launch
+> line, a different profile -- note it here in one line each. Banner inherited docs; do
+> not delete them, or you lose upstream's genuine content and its provenance.
+
+---
+
 # Snakemake workflow: {{cookiecutter.project_name}}
 
 [![Snakemake](https://img.shields.io/badge/snakemake-≥{{cookiecutter.min_snakemake_version}}-brightgreen.svg)](https://snakemake.readthedocs.io)
@@ -28,7 +41,7 @@ Install snakemake and the workflow's other dependencies via conda/mamba. If cond
 
 ### Step 2: Configure workflow
 
-Configure the workflow according to your needs via editing the file `config.yaml`. Use/modify the config yaml files in the `snakemake_profiles/slurm/` profile to run on UChicago RCC Midway with slurm scheduler.
+Configure the workflow according to your needs via editing the file `config/config.yaml`. Use/modify the config yaml files in the `snakemake_profiles/slurm/` profile to run on UChicago RCC Midway with slurm scheduler.
 
 ### Step 3: Execute workflow
 
@@ -36,12 +49,21 @@ Test your configuration by performing a dry-run via
 
     snakemake -n
 
+Note that a dry run is not free: `rules/common.smk` executes at parse time and creates
+submodule script symlinks on disk.
+
 Execute the workflow locally via
 
     snakemake --cores $N
 
-using `$N` cores or run it in a cluster environment via the included slurm snakemake profile.
+using `$N` cores, or submit to SLURM via the included profile, which sets the executor,
+account, partition, retries and log destination -- do not re-pass those flags.
 
-    snakemake --profile snakemake_profiles/slurm
+    snakemake --profile snakemake_profiles/slurm -n     # dry run, as SLURM would see it
+    snakemake --profile snakemake_profiles/slurm        # submit
+
+The profile requires Snakemake >= 8 and `snakemake-executor-plugin-slurm`; both are in the
+driver env `envs/{{ cookiecutter.repo_name }}.yaml`. Per-rule resource overrides go in the
+`set-resources:` block of `snakemake_profiles/slurm/config.yaml`.
 
 See the [Snakemake documentation](https://snakemake.readthedocs.io) for further details.
