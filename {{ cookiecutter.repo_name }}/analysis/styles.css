@@ -1,0 +1,28 @@
+/* Project-wide tweaks on top of the `cosmo` Bootstrap theme. */
+
+/* Keep wide dataframe / results tables readable instead of overflowing the page. */
+.cell-output-display > table,
+table.dataframe {
+  font-size: 0.85rem;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* The analysis listing on the home page. */
+#analyses table {
+  font-size: 0.95rem;
+}
+#analyses td:first-child {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Give figures room to breathe, and keep captions subordinate to the figure. */
+figure {
+  margin: 1.5rem 0;
+}
+figure figcaption {
+  font-size: 0.85rem;
+  color: #555;
+}

@@ -1,0 +1,55 @@
+# Documentation + small results only. See analysis/README.md.
+#
+# DENY-ALL THEN PERMIT, BY EXTENSION. A new large file type is blocked by default rather
+# than slipping into a commit. The cost of that safety:
+#
+#   *** A NEW FILE TYPE IS SILENTLY NOT COMMITTED UNTIL YOU ADD AN ALLOW LINE BELOW. ***
+#   `git status` will not mention it. `git check-ignore -v <path>` names the rule that
+#   caught it. If a figure or table "did not get committed", that is what happened.
+#
+# ANNOTATE WHAT YOU ARE *NOT* ALLOWING. The habit that makes this file useful over years
+# is recording the size of what the deny-all holds back, so the next person can see the
+# stakes instead of re-measuring. Once this directory has real content:
+#
+#   cd analysis && git status --porcelain --ignored | awk '$1=="!!"{print $2}' \
+#     | xargs -r du -ch 2>/dev/null | tail -1                    # total held back
+#   find . -type f | sed 's/.*\.//' | sort | uniq -c | sort -rn | head   # by extension
+#
+# ...then keep a line here like:
+#   # Deliberately NOT permitted (and large here): *.pkl (1.3 GB)  *.bam (400 MB)  *.pdf
+*
+!*/
+!.gitignore
+
+# --- documentation and code (always small) ---
+!*.md
+!*.qmd
+!*.ipynb
+!*.py
+!*.R
+!*.sh
+!*.sbatch
+!*.yaml
+!*.yml
+
+# --- results small enough to be worth committing ---
+!*.webp
+!*.tsv
+!*.csv
+
+# --- Quarto site assets (only present when use_quarto_site=y) ---
+!*.css
+!*.scss
+!*.bib
+
+# --- narrow, path-scoped exceptions go here, one per line, naming the producer ---
+# e.g. !26_08_27_some_topic/gene_lists/*.txt   # produced by some_notebook.ipynb
+#      Prefer a path-scoped exception over widening an extension globally.
+
+# ...never these, whatever they contain.
+# MUST STAY LAST: within a .gitignore the last matching rule wins, and `!*/` above
+# re-includes every directory -- so these re-exclusions have to come after it.
+.ipynb_checkpoints/
+__pycache__/
+logs/
+work/

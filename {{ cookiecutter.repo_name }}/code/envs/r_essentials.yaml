@@ -1,0 +1,21 @@
+name: r_essentials
+# Slim, portable R env for .Rmd / R-kernel Quarto notebooks. High-level (unpinned) so it
+# solves on any machine; pin specific versions here only if you need reproducibility.
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base>=4.3        # floor matters: the 2021-era dumps this replaced pinned R 3.6
+  - r-essentials        # tidyverse, knitr, rmarkdown, and friends
+  - r-irkernel          # R kernel for Jupyter / Quarto
+  - r-data.table
+  - r-cowplot
+  - r-rcolorbrewer
+  - r-viridis
+  - r-gplots
+  - r-glmnet
+  - r-drc
+  - bioconductor-complexheatmap
+  - bioconductor-edger
+  - bioconductor-limma
+  - bioconductor-qvalue

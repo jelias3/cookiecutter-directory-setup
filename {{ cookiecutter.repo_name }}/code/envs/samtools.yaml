@@ -1,0 +1,13 @@
+# Example rule-specific conda env. Reference it from a Snakemake rule with:
+#     rule foo:
+#         conda: "envs/samtools.yaml"
+#         shell: "samtools ..."
+# Keep one small env per tool/rule group rather than a single monolithic env; name the
+# file after the tool or rule it serves, use the .yaml extension, and prefer a loose
+# floor (`samtools>=1.20`) over either a bare name or an exact build string.
+name: samtools
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - samtools>=1.20

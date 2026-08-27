@@ -1,15 +1,30 @@
 import pandas as pd
 import os
+import sys
 import filecmp
 import pathlib
 
 
 # try/except useful for running this script in isolation in interactive shell
 # for debugging
+#
+# `.set_index("Sample", drop=False)` rather than `index_col=0`: it gives the same index but
+# KEEPS the Sample column, which snakemake's validate() needs -- validate() sees each row's
+# columns and not the index, so with the column dropped a `required: [Sample]` schema fails
+# on every row.
 try:
-    samples = pd.read_csv(config["samples"],sep='\t', index_col=0)
+    samples = pd.read_csv(config["samples"], sep='\t').set_index("Sample", drop=False)
 except (NameError, KeyError) as NameOrKeyError:
-    samples = pd.read_csv("config/samples.tsv",sep='\t', index_col=0)
+    samples = pd.read_csv("config/samples.tsv", sep='\t').set_index("Sample", drop=False)
+
+# Validate the sample sheet against code/schemas/samples.schema.yaml. Shipped COMMENTED
+# because the schema's columns and its Sample-ID pattern describe the template's example
+# sheet, not yours yet -- uncomment once samples.tsv has its real columns and the schema
+# matches them. Leaving it commented is a choice with a cost: nothing checks your sample
+# IDs, and a typo'd ID silently becomes a new sample with its own output tree.
+#
+# from snakemake.utils import validate
+# validate(samples, schema="../schemas/samples.schema.yaml")
 
 # Add code for function definitions and other things that must be defined prior
 # to rest of workflow (eg custom snakemake input functions)
@@ -24,9 +39,6 @@ def has_differences(dcmp):
         return any([has_differences(subdcmp) for subdcmp in dcmp.subdirs.values()])
     except NotADirectoryError:
         return True
-
-# Add code for function definitions and other things that must be defined prior
-# to rest of workflow (eg custom snakemake input functions)
 
 def CreateSymlinksOfDir1ContentsIntoDir2(Dir1, Dir2):
     """

@@ -1,12 +1,33 @@
-# This file should contain everything to configure the workflow on a global scale.
-# In case of sample based data, it should be complemented by a samples.tsv file that contains
-# one row per sample. It can be parsed easily via pandas.
+# Workflow-wide configuration. Per-sample metadata lives in config/samples.tsv.
+#
+# Paths here are relative to `code/` (snakemake's working directory) unless they are
+# absolute. Anything that points outside the repo belongs in this file as a key -- never
+# hardcoded in a rule, a script, or a notebook. A hardcoded absolute path into someone
+# else's directory is the most common reason an old rule stops working.
 
 samples: config/samples.tsv
 
+# Shared reference genomes and annotations (read-only, outside the repo).
+genome_prefix: "{{ cookiecutter.genome_prefix }}"
 
-{% for submodule in cookiecutter.submodules %}
-{{ submodule }}:
-    ## Define {{ submodule }} specific-config values that will overwrite workflow-wide config values if they are defined above
-    ## If the {{ submodule }} requires config values (eg from a config.yaml), must copy paste those values here if not already defined above
-{% endfor %}
+# Scratch root for large intermediates that must never be tracked or backed up.
+scratch_dir: "{{ cookiecutter.scratch_dir }}"
+
+
+# --- Third-party code pinned by commit ---------------------------------------------
+# Any external tool this project depends on that has NO tagged release must be pinned by
+# SHA here, with a comment saying which branch it was on and when. "master" is not a
+# version; it is a moving target that will silently change your numbers.
+#
+# Prefer a git submodule (`git submodule add <url> code/module_workflows/<name>`) so the
+# SHA lives in .gitmodules and git enforces it. Use this block only for code a rule
+# clones or downloads at runtime.
+#
+# third_party:
+#   TODO_toolname:
+#     url: "https://github.com/TODO/TODO.git"
+#     ref: "TODO_full_sha"     # TODO_branch @ YYYY-MM-DD
+#     why_not_a_release: "TODO -- upstream has no tags"
+
+
+# SUBMODULE_CONFIG_PLACEHOLDER

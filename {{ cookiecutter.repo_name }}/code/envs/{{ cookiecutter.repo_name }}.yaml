@@ -1,21 +1,93 @@
 name: {{ cookiecutter.repo_name }}
+# The DRIVER environment: snakemake itself plus the SLURM executor plugin, and the
+# interactive analysis stack. Per-rule tool envs are sibling files in this directory
+# (one tool per file, `name:` matching the filename) and are created BY snakemake.
+# Tip: on memory-limited login nodes `conda env create` may get OOM-killed during the
+# solve; micromamba uses far less memory for the same solve:
+#     micromamba env create -f envs/{{ cookiecutter.repo_name }}.yaml --yes
 channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python=3.9   # or 2.7
-  - bcftools
-  - bedtools
-  - biopython
-  - fastx_toolkit
-  - multiqc
+  # --- workflow engine: keep these together, the plugin is version-coupled ---
+  - snakemake>={{ cookiecutter.min_snakemake_version }},<9
+  - snakemake-executor-plugin-slurm
+  - snakemake-storage-plugin-fs
+
+  # Jupyter / notebook
+  - jupyterlab
+  - jupyter
+  - ipykernel
+  - ipython
+  - ipywidgets
+  - nbconvert
+  - nbformat
+  - nbclient
+  - papermill
+
+  # Core scientific
   - numpy
   - pandas
-  - picard
-  - qualimap
-  - samtools
   - scipy
-  - snakemake={{ cookiecutter.min_snakemake_version }}
-  - star=2.6.1b
-  - ucsc-bedgraphtobigwig
-  - ucsc-liftover
+  - matplotlib
+  - seaborn
+  - plotnine
+  - altair
+  - bokeh
+  - plotly
+
+  # Data / IO
+  - polars
+  - pyarrow
+  - openpyxl
+  - xarray
+  - dask
+
+  # Stats / ML
+  - scikit-learn
+  - statsmodels
+  - arviz
+  - pymc>=5
+  - pip
+  - pytensor
+  # tensorflow pulls a large CUDA dependency tree and dominates this solve. If
+  # `conda env create` fails or takes forever, drop it here and give it its own env.
+  - tensorflow
+
+  # Bioinformatics
+  - biopython
+  - bedtools
+  - pybedtools
+  - pysam
+  - pygenometracks
+  - bedparse
+  - pyfaidx
+  - gffutils
+  - pybigwig
+  - bioconda::igv-reports
+  - bioconda::spliceai
+  - bioconda::htseq
+  - bioconda::blast=2.16.0
+  - bioconda::hgvs
+  - bioconda::logomaker
+  - bioconda::gseapy  # GO/pathway enrichment (ORA + GSEA)
+
+  # Utilities
+  - jinja2
+  - pytest
+  - tqdm
+  - future
+  - pycryptodome
+  - ca-certificates
+  - certifi
+  - openssl
+  # These four are transitive; pinning them is a common cause of an unsatisfiable
+  # solve. Remove them first if this env stops resolving.
+  - pyopenssl>=24  # avoid drift vs cryptography
+  - natsort
+  - anndata
+
+  - pip:
+    - my-utils==0.1.0
+    - alphagenome==0.5.1
+    - pikachu-chem==1.1.5

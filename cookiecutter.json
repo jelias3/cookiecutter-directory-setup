@@ -4,10 +4,43 @@
   "username": "jelias3",
   "project_name": "My project",
   "repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '_') }}",
-  "min_snakemake_version": "7.32.0",
-  "make_conda_env": ["n", "y"],
-  "license": ["MIT", "BSD", "Apache Software License 2.0", "None"],
-  "slurm_parition": "caslake",
-  " ": "This is a dummy cookiecutter variable that I use to give some description to the next cookiecutter variable...\n\n The next cookiecutter variable is called 'submodules'. Here you can specify snakemake submodules as a dictionary with name of submodule (only word characters allowed, [A-za-z0-9_]) and url of remote repo\n\nexample: {\"rna_seq\": {\"url\": \"git@github.com:bfairkun/snakemake-workflow_rna-seq.git\", \"branch\": \"main\"}, \"another_git_submodule\": {\"url\": \"https://github.com/user/mod.git\"}} \n\nLeave blank (default) or supply and empty dict to not add any submodules\n\nReady to define submodules? Press enter to continue.",
-  "submodules": {}
+  "min_snakemake_version": "8.25.5",
+  "slurm_account": "pi-yangili1",
+  "slurm_partition": "caslake",
+  "genome_prefix": "/project2/yangili1/bjf79/ReferenceGenomes/",
+  "scratch_dir": "/scratch/midway3/{{ cookiecutter.username }}/",
+  "use_quarto_site": [
+    "n",
+    "y"
+  ],
+  "make_conda_env": [
+    "n",
+    "y"
+  ],
+  "license": [
+    "MIT",
+    "BSD",
+    "Apache Software License 2.0",
+    "None"
+  ],
+  "submodules": {},
+  "_copy_without_render": [
+    ".claude/skills/*/scripts/*.py"
+  ],
+  "__prompts__": {
+    "full_name": "Your name (README/LICENSE attribution)",
+    "email": "Your email",
+    "username": "GitHub username",
+    "project_name": "Project name (human-readable, spaces OK)",
+    "repo_name": "Directory / repo name (derived from project_name; [A-Za-z0-9_-] only)",
+    "min_snakemake_version": "Minimum Snakemake version (must be 8.x -- the SLURM executor plugin requires >=8)",
+    "slurm_account": "SLURM account (midway3 '-A' flag, e.g. pi-yangili1)",
+    "slurm_partition": "SLURM partition (e.g. caslake, bigmem, gpu)",
+    "genome_prefix": "Shared reference-genome root (becomes the genome_prefix key in code/config/config.yaml)",
+    "scratch_dir": "Scratch root for large intermediates (becomes the scratch_dir key in code/config/config.yaml)",
+    "use_quarto_site": "Generate a Quarto site in analysis/ that indexes SUMMARY.md files? (n = Snakemake-only project)",
+    "make_conda_env": "Create the driver conda env from code/envs/<repo_name>.yaml now? (slow: full solve)",
+    "license": "License for the generated project",
+    "submodules": "Snakemake submodules as a JSON dict of {name: {url, branch}}. Names must match [A-Za-z0-9_]. Example: {\"rna_seq\": {\"url\": \"git@github.com:bfairkun/snakemake-workflow_rna-seq.git\", \"branch\": \"main\"}}. Press Enter for none."
+  }
 }
