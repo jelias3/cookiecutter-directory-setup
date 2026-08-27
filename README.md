@@ -161,6 +161,44 @@ state. See the generated `docs/conventions.md` §Agent tooling for what is delib
 - `execute: enabled: false` -- rendering formats notebooks' **stored** outputs and never
   starts a kernel. Notebooks are executed out of band, by Snakemake or by you.
 
+### Verification
+
+Before merging a change to this template, generate real projects from it. Two classes of
+bug are invisible to inspection and only appear on generation:
+
+1. **Jinja collisions.** Cookiecutter renders *every* file, hooks included. A brace-hash
+   pair reads as a comment-open, so bash's array-length operator, Quarto's `{#id}` div
+   syntax, and even a literal Jinja tag inside a `#` comment will abort generation.
+2. **An unsolvable driver env.** `code/envs/<repo>.yaml` is not exercised unless you
+   actually run the solve.
+
+Generate into a scratch directory, always with `--keep-project-on-failure` (without it a
+failing hook deletes the tree and you cannot see what went wrong):
+
+```
+cookiecutter --no-input --keep-project-on-failure -o /tmp/_testgen . \
+  project_name="t" use_quarto_site=n make_conda_env=n
+```
+
+Cover the matrix: `use_quarto_site` n/y x `submodules` empty/non-empty, plus `license=None`,
+plus no conda on `PATH`, plus `-f` into a pre-existing empty directory. Then assert per
+project: no unrendered Jinja, no leftover `cookiecutter.` references, no surviving
+`*PLACEHOLDER`, Quarto files present iff `y`, every must-track file actually tracked
+(`git ls-files`, not `git check-ignore` — a negation rule makes `check-ignore` exit 0 too),
+and env files valid with `name` matching the filename.
+
+Finally, run the workflow the way a user will:
+
+```
+snakemake -n
+snakemake --profile snakemake_profiles/slurm -n
+```
+
+**And solve the driver env at least once** (`conda env create -f code/envs/<repo>.yaml`,
+~50 min). Skipping this is how `bioconda::logomaker` and a `my-utils==0.1.0` pin that was
+never published to PyPI both shipped in a template that otherwise passed every check.
+
 ---
+
 
 Start scripting and documenting your project!
