@@ -1,85 +1,136 @@
-# AGENTS.md — Project conventions for AI coding agents
+# {{ cookiecutter.project_name }}
 
-This file documents the layout and working conventions for this project so that any AI coding agent (Claude Code, OpenAI Codex CLI, Aider, etc.) can pick up the right habits automatically. Human contributors should also follow these conventions; see `README.md` for the human-oriented project overview.
+TODO: four lines, maximum. What this project measures, on what data, with what methods,
+toward what claim. Name the assay and the organism. No background here -- background goes
+in `docs/abstract.md`, which this paragraph should end by pointing at. Delete this
+instruction block once written.
 
-If you are an agent: read this file before making structural decisions (where to put a new file, how to document a notebook helper, where to write output). Conventions here override generic defaults.
+Scientific motivation: `docs/abstract.md`. Runs on UChicago RCC midway3 (SLURM, account
+`{{ cookiecutter.slurm_account }}`, partition `{{ cookiecutter.slurm_partition }}`).
 
----
+## Coding discipline
 
-## Project layout
+- Avoid antipatterns, monolithic coding, spaghetti code, and God objects.
+- Prioritize modularity and single responsibility.
 
-```
-{{ cookiecutter.repo_name }}/
-├── analysis/        # Quarto/Rmarkdown notebooks (.qmd, .Rmd, .ipynb) + ad-hoc helpers
-│   └── scripts/     # One-off notebook helper scripts (NOT in Snakemake)
-├── code/            # Snakemake pipeline and production scripts
-│   ├── rules/       # *.smk files
-│   ├── scripts/     # Production scripts called by Snakemake rules
-│   ├── envs/        # Conda env YAMLs
-│   ├── config/
-│   ├── module_workflows/  # Git submodules for shared Snakemake modules
-│   ├── scratch/     # Regeneratable intermediates — DO NOT commit large files
-│   └── Snakefile
-├── data/            # Small, never-edited raw data (git-tracked)
-├── output/          # Pipeline outputs intended to be committed and shared
-└── docs/            # Rendered Quarto HTML site (GitHub Pages)
-```
+## Read this first
 
-## Where things go
+**This file is an index, not a reference** -- it holds only what you need *before* you know
+what you are doing. If your task touches a row below, open that doc **before** writing code
+or commands. Don't infer behavior from source alone, and don't act on a recollection of
+this repo that isn't on this page. For anything else in `docs/`, start at `docs/README.md`.
 
-| File type | Location | Notes |
+| about to touch | read first |
+|---|---|
+| where a new file goes; `analysis/scripts/`; layout questions | `docs/conventions.md` |
+| launching a run, a failed job, hunting a log, writing sbatch | `docs/running_and_slurm.md` |
+| `config/config.yaml`, `config/samples.tsv`, sample IDs | `docs/conventions.md` §Samples |
+| "what do we already know about X" | `analysis/README.md` |
+| TODO: first subsystem -- `code/rules/<X>.smk`, `output/<X>/**` | TODO: `docs/<x>.md` |
+| TODO: any join/merge on genomic coordinates or IDs, once there is one | TODO: `docs/coordinate_conventions.md` |
+
+**When sources disagree, precedence depends on the kind of claim:** *what the code does* →
+the code wins, and a doc contradicting it is a bug worth reporting; *a number or empirical
+result* → the most recent `analysis/*/SUMMARY.md` that measured it; *a convention or
+decision* → `docs/`; *where to look* → this file. Never silently pick a side -- say which
+rule you applied.
+
+## Two working directories
+
+| | Snakemake | hand-written sbatch / manual shell |
 |---|---|---|
-| Snakemake-invoked script | `code/scripts/` | Any script a `rules/*.smk` file calls. Production code. |
-| Notebook helper (one-off, not in Snakemake) | `analysis/scripts/` | Named after the notebook it pairs with, e.g. `20260514_variant_exploration_pileup_per_barcode.py`. Docstring states the pairing + exact CLI. |
-| Snakemake rule | `code/rules/<topic>.smk` | Grouped by topic, not by date. |
-| Conda env YAML | `code/envs/<name>.yaml` | Don't modify `py_general`; create `claude_<DescriptiveName>` if you need a new env. |
-| Quarto notebook | `analysis/YYYYMMDD_<topic>.qmd` | Date-prefixed; one notebook per analysis question. |
-| Rendered notebook HTML | `docs/` | Output of `quarto render`; tracked in git for GitHub Pages. |
-| Pipeline intermediate (large, regeneratable) | `code/scratch/` | Not committed; safe to delete and rebuild. |
-| Pipeline output (small, shareable) | `output/` | Committed; the "answer" of the pipeline. |
-| Raw data | `data/` | Small, never edited. |
+| CWD | **`code/`** | **repo root** |
+| repo-root paths | `../output/`, `../logs/`, `../data/` | `output/`, `logs/`, `data/` |
+| scripts | `scripts/foo.py` | `code/scripts/foo.py` |
 
-## Convention: ad-hoc notebook helper scripts
+The same script gets invoked both ways, so **decide which launcher owns a path before
+writing it, and never copy one between the two without re-prefixing.** A bare relative
+path in a rule lands inside `code/`.
 
-Sometimes a notebook needs a one-off data-prep step that doesn't belong in the Snakemake pipeline — e.g. a per-barcode pileup that only one notebook depends on. These go in `analysis/scripts/`.
+## Running the pipeline
 
-Rules:
+```bash
+cd code
+mkdir -p ../logs/snakemake
+nohup conda run -n {{ cookiecutter.repo_name }} \
+  snakemake --profile snakemake_profiles/slurm \
+  -- <targets> &> ../logs/snakemake/<label>_$(date +%Y%m%d_%H%M%S).log &
+```
 
-1. **Name** the script after the notebook it pairs with: `<notebook_stem>_<purpose>.py`.
-2. The script's **docstring** must state which notebook it pairs with and include the exact CLI used to generate its outputs.
-3. The notebook must **reference the script by path** and show the exact command that produced the input files it loads. Use a Quarto callout or markdown block, e.g.:
+- **The `--` before targets is required** -- snakemake otherwise consumes the first target
+  as a flag value.
+- The profile owns executor, account, partition, retries, `latency-wait` and the log
+  destination. **Do not re-pass them.** Read `docs/running_and_slurm.md` before adding a flag.
+- **`snakemake -n` is not free.** `rules/common.smk` executes at parse time and creates
+  submodule script symlinks on disk, and snakemake writes into `.snakemake/`. A dry run is
+  read-mostly, not read-only.
 
-   > This analysis depends on `analysis/scripts/<notebook_stem>_<purpose>.py`, which was run once to produce `code/scratch/<output>.tsv`:
-   >
-   > ```bash
-   > python analysis/scripts/<notebook_stem>_<purpose>.py <args>
-   > ```
+## Environments
 
-4. **Outputs** of these scripts go to `code/scratch/` (regeneratable) or `output/` (shareable). Not in `analysis/`.
-5. If a helper later turns out to be reused across notebooks or worth pipelining, **promote** it: move to `code/scripts/`, wire a rule into `code/rules/<topic>.smk`, and update the notebook to read from the rule's output path instead of running the script directly.
+- `{{ cookiecutter.repo_name }}` -- the driver env: snakemake plus the SLURM executor
+  plugin. Created from `code/envs/{{ cookiecutter.repo_name }}.yaml`.
+- Per-rule envs are `code/envs/<tool>.yaml`, named in the rule's `conda:` directive and
+  created by snakemake. Never `conda activate` inside a rule, and never point `conda:` at
+  an absolute path to a prebuilt env -- that path will not exist for anyone else.
+- TODO: name the analysis-notebook env here once it exists, and say which env holds which
+  hard-to-install dependency. One line each.
 
-## Quarto notebooks
+## What is actually wired up right now -- verify, don't trust
 
-- The `analysis/_quarto.yml` configures the site; `analysis/index.qmd` lists notebooks.
-- Render with `quarto render` from `analysis/`. The HTML lands in `../docs/`.
-- For self-contained HTML (e.g. for sharing without the assets), add `--embed-resources` or set `embed-resources: true` in the notebook YAML.
-- Prefer adding `code-fold: true` to the notebook YAML so the rendered HTML is readable without code clutter.
-- If a notebook depends on large files outside the repo (e.g. raw BAMs on the cluster), say so explicitly in the notebook prose so a fresh `git clone` reader knows what they can vs cannot run.
+Every claim in this section must end with the command that recomputes it. A claim without
+a command does not belong here.
 
-## Snakemake
+- TODO: which rule modules are actually `include`d, and what `rule all` really builds.
+  → `grep -n '^ *include\|^rule all' code/Snakefile`
+- TODO: which submodules are initialized -- an uninitialized one that rules invoke is the
+  classic silent failure.
+  → `git submodule status`
+- TODO: which config keys are set vs blank. A blank key usually means whole rule families
+  are inert rather than broken.
+  → `grep -n ':' code/config/config.yaml | grep -v '^\s*#'`
 
-- Work from `code/` as the working directory when invoking Snakemake.
-- Use rule-specific conda envs in `code/envs/` rather than a monolithic env.
-- Pipeline outputs that other notebooks or downstream stages read should land in `output/` (small, committed) or `code/scratch/` (large, regeneratable).
-- Snakemake submodules go in `code/module_workflows/` as git submodules (one per workflow).
+## Traps that fail silently
 
-## What NOT to do
+**Admission criteria -- a trap earns one line here only if all three hold:** you would hit
+it spontaneously without being warned, **and** it fails *silently* (wrong numbers or fewer
+rows, not an exception), **and** it fits on one line. Everything else goes in the relevant
+`docs/` file. **Cap: 5 entries.** A sixth entry means demoting one.
 
-- Don't write production helpers into `code/scratch/` — that directory is for regeneratable junk.
-- Don't write large files into `output/` — keep `output/` small and committed.
-- Don't bypass the cookiecutter convention by inventing a new top-level directory.
-- Don't modify the shared `py_general` conda env. Make a new `claude_*` env if you need additional packages.
+- **`analysis/.gitignore` and `code/.gitignore` are deny-all allowlists by extension.** A
+  new file type is silently *not committed* until you add an allow line; `git status` will
+  not warn you. `git check-ignore -v <path>` names the rule that caught it.
+- TODO: your first real trap goes here, with the assertion or print that would have caught it.
 
-## For Claude Code specifically
+## Conventions
 
-The repo also contains a `CLAUDE.md` that simply references this file (`@AGENTS.md`). Claude Code follows that reference. User-level CLAUDE.md additions live in `~/.claude/CLAUDE.md`.
+- **Analyses:** one dated dir per investigation, `analysis/<YY>_<MM>_<DD>_<topic>/`,
+  zero-padded, lowercase snake_case topic. The rule and everything else about that
+  directory is declared once in `analysis/README.md` -- read it there, don't restate it.
+  Each dir carries a `SUMMARY.md` (template `analysis/_TEMPLATE_SUMMARY.md`, process = the
+  `analysis-summary` skill).
+- **Notebooks are re-run manually by the user, never headlessly** -- read the stored
+  `.ipynb` outputs. Figures go through an injected `savefig()` helper to
+  `figures/<name>.webp`, never `cell_N_plot.png`.
+- **Results live under `output/`**, not in `analysis/`. `data/`, `output/` and `logs/` are
+  gitignored except for their `README.md`.
+- **All logs land under repo-root `logs/<name>/`. One policy, no exceptions.** Stated in
+  full in `docs/running_and_slurm.md` §Logs.
+- **Reference data and scratch come from config keys** (`genome_prefix`, `scratch_dir` in
+  `code/config/config.yaml`), never a hardcoded absolute path.
+- **ALL-CAPS filenames are documents of record** (`SUMMARY.md`, `HYPOTHESES.md`,
+  `TEST_PLAN.md`); a leading `_` marks a template so it sorts first.
+- **Commits:** `type(scope): imperative summary`. Bodies carry real numbers and say what
+  was *not* changed.
+- **Submodules are added with `git submodule add`, never as a bare gitlink** -- a gitlink
+  with no `.gitmodules` entry produces a clone nobody can reproduce.
+
+## Maintaining this file
+
+- **Hard budget: 150 lines** (`wc -l AGENTS.md`). An edit that exceeds it must delete or
+  demote something in the same edit. A budget with slack is not a budget.
+- **New durable facts go in the relevant `docs/` file, not here.** Edit this file only when
+  a routing target moves, a top-5 trap changes, or the launch command changes.
+- **No rot-prone facts here:** file or sample counts, byte sizes, source line numbers,
+  dates, per-dataset status, "currently running" state. State the shape, or the command
+  that computes it.
+- `CLAUDE.md` is a one-line `@AGENTS.md` import and must stay that way. Substance here.

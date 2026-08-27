@@ -1,16 +1,140 @@
+# =============================================================================
+# Pipeline data -- regenerable, large, never committed.
+#
+# Note the `/dir/*` form rather than `/dir/`: with a trailing slash git refuses to
+# descend into the directory at all, and the `!` lines below could not re-include
+# anything. Each of these directories keeps exactly ONE committed file -- its README,
+# which states that directory's layout contract. That is deliberate: the contract for
+# output/ is exactly the knowledge a newcomer needs, and it has to live where they look.
+# =============================================================================
+/data/*
+!/data/README.md
+/output/*
+!/output/README.md
+/logs/*
+!/logs/README.md
+
+# =============================================================================
+# Defense in depth: large bioinformatics file types, anywhere in the tree.
+#
+# `analysis/` and `code/` each have their own STRICTER deny-all-then-allowlist
+# .gitignore. Precedence, because it is not obvious and it will cost you an hour:
+#   - the .gitignore in the DEEPEST directory containing a path wins;
+#   - within a single file, the LAST matching line wins.
+# So a `!` keep-line here CANNOT rescue a file that analysis/.gitignore denies.
+# Diagnose any surprise with:  git check-ignore -v <path>
+# =============================================================================
+
+# Sequencing reads
+*.fastq
+*.fq
+*.fastq.gz
+*.fq.gz
+*.sra
+
+# Alignments and their indexes
+*.bam
+*.bai
+*.sam
+*.cram
+*.crai
+
+# Oxford Nanopore raw signal
+*.pod5
+*.fast5
+
+# Large coordinate / annotation / variant files
+*.bed
+*.bed.gz
+*.gtf
+*.gtf.gz
+*.gff
+*.gff3
+*.bigWig
+*.bw
+*.bigBed
+*.bb
+*.vcf
+*.vcf.gz
+*.bcf
+*.tbi
+*.junc
+
+# Reference sequence and indexes
+*.fa
+*.fasta
+*.fa.gz
+*.fasta.gz
+*.fai
+*.2bit
+
+# Serialized objects and big archives
+*.pkl
+*.rds
+*.h5
+*.h5ad
+*.npz
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# =============================================================================
+# Keep-list: small artifacts that must survive the deny-list above.
+# Add a line HERE rather than widening a deny pattern, and keep a comment naming what
+# produces the file -- an unexplained `!` line is one nobody will ever dare delete.
+# =============================================================================
+!**/figures/*.webp
+!code/config/*.tsv
+!code/schemas/*.yaml
+!.snakemake/log/*.log
+
+# =============================================================================
+# Snakemake, Python, Jupyter, R, editors, OS
+# =============================================================================
+.snakemake/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 .Rapp.history
-.DS_Store
-analysis/figure
-analysis/*png
-analysis/*html
-analysis/*_cache
-analysis/site_libs
 
-# Quarto build artifacts
+.vscode/
+*.swp
+*~
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# =============================================================================
+# Scratch
+# =============================================================================
+work/
+tmp/
+*.tmp
+*.temp
+{% if cookiecutter.use_quarto_site == 'y' %}
+# =============================================================================
+# Quarto. `.quarto/` is the render cache; `*_files/` are per-document asset dirs.
+# The rendered site lands in docs/site/ (see analysis/_quarto.yml). Whether to commit
+# it is a judgement call:
+#   - commit it if you serve GitHub Pages from /docs (leave the block below commented);
+#   - ignore it if you do not (uncomment the block).
+# Do not do both by accident: a half-committed site is worse than either choice.
+# =============================================================================
 .quarto/
-analysis/.quarto/
-analysis/*_files/
+*_files/
+/analysis/_site/
+# /docs/site/
+{% endif %}
+# =============================================================================
+# Claude Code: share skills, commands and the committed allowlist -- not machine-local
+# state. .claude/settings.json, .claude/skills/** and .claude/commands/** ARE tracked.
+# =============================================================================
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
