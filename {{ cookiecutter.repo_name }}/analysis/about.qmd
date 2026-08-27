@@ -1,5 +1,0 @@
----
-title: "About"
----
-
-This site was generated with [Quarto](https://quarto.org).

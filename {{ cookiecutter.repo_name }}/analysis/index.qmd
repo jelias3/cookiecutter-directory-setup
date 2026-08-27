@@ -1,24 +1,21 @@
 ---
-title: "Home"
+title: "{{ cookiecutter.project_name }}"
 listing:
-  contents:
-    - "*.qmd"
-    - "*.Rmd"
-    - "*.ipynb"
-  exclude:
-    filename:
-      - "index.qmd"
-      - "about.qmd"
-      - "license.qmd"
+  id: analyses
+  contents: "*/SUMMARY.md"
   type: table
-  fields: [title, date, description]
+  fields: [date, title, description]
   sort: "date desc"
-  sort-ui: true
+  sort-ui: [date, title]
   filter-ui: true
+  date-format: "YYYY-MM-DD"
 ---
 
-Welcome to your Quarto project!
+Each analysis lives in `analysis/<YY>_<MM>_<DD>_<topic>/` with a `SUMMARY.md` whose YAML
+front matter supplies the `title`, `date` and `description` below. This index is built
+from that front matter — **nothing here needs editing when an analysis is added.** Write
+good front matter instead; `description` is the headline and carries the actual numeric
+conclusion. See [`README.md`](README.md) for the conventions.
 
-Below are all notebooks (`.qmd`, `.Rmd`, `.ipynb`) in the `analysis/` directory. This
-table is generated natively by Quarto from each notebook's YAML front matter (`title`,
-`date`, `description`) — no R or Python required to render this page.
+::: {#analyses}
+:::

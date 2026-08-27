@@ -1,17 +1,49 @@
+# Quarto site for this project's analyses. Generated only when use_quarto_site=y.
+#
+# What this site IS: a browsable, chronologically sorted index of the analyses in this
+# directory, built from each analysis/<dir>/SUMMARY.md's YAML front matter, plus the
+# rendered notebooks themselves.
+#
+# What it is NOT: the documentation layer. Hand-written prose lives in docs/*.md and is
+# read on GitHub. This renders into docs/site/ so it never mixes with those sources.
+#
+# Render from this directory:  quarto render
+
 project:
   type: website
-  output-dir: ../docs
+  output-dir: ../docs/site
+  render:
+    - "index.qmd"
+    - "*/SUMMARY.md"
+    - "*/*.ipynb"
+    - "*/*.qmd"
+    - "!scripts/"
 
 website:
   title: "{{ cookiecutter.project_name }}"
   navbar:
     left:
       - href: index.qmd
-        text: Home
-      - about.qmd
+        text: Analyses
+
+# Notebooks are executed OUT OF BAND -- by Snakemake, or by the user interactively -- and
+# committed WITH their stored outputs. Rendering formats those stored results and never
+# starts a kernel. This is already the default for .ipynb; setting it here extends it to
+# .qmd too, so a stray computational .qmd cannot trigger a cluster job at render time.
+#
+# If you later write a .qmd that SHOULD execute, override it in that file's own front
+# matter with `execute: {enabled: true}` rather than flipping this global.
+execute:
+  enabled: false
 
 format:
   html:
     theme: cosmo
+    css: styles.css
     toc: true
     embed-resources: true
+    code-fold: true
+    # SUMMARY.md carries both a front-matter `title` and a body `# H1`; the H1 is what
+    # makes the file read correctly on GitHub when the site is off. Suppressing the
+    # generated title block avoids showing the title twice in the rendered HTML.
+    title-block-style: none
